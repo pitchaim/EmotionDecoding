@@ -4,6 +4,7 @@ import os
 import sys
 import scipy
 from scipy import signal
+import pickle as pkl
 
 SR = 1024
 PRES_TIME = 2.5
@@ -77,6 +78,7 @@ master_Y = []
 #loop over each separate session datafile
 print('Slicing data by event windows')
 for s in range(len(data_arrs)):
+    print('Session %d' % s)
     session = 0
     if 'SES2' in filenames[s]:
         session = 1
@@ -85,33 +87,44 @@ for s in range(len(data_arrs)):
     m = markers[s]
     #loop over block start points (30 blocks)
     for time in range(len(m)):
+        print('Block %d' % time)
         start = m[time] + IMAGE_START
+        print('Got start time %d' % start)
         for im in range(5):
+            print('Image pres %d' % im)
             st = start + int(im*SR*PRES_TIME)
-            end = int(SR*PRES_TIME*(im+1))
+            end = start + int(SR*PRES_TIME*(im+1))
             data_window = data_arrs[s][:,st:end]
-            master_X_raw.append(data_window)
-            cl = classes[session][time]
-            class_vec = classdict[cl]
-            master_Y.append(class_vec)
+            print('Checking data window slice:')
+            print(np.shape(data_window))
+            if np.shape(data_window)[1] > 0:
+                print('Nonzero array - added')
+                master_X_raw.append(data_window)
+                cl = classes[session][time]
+                class_vec = classdict[cl]
+                master_Y.append(class_vec)
 
 #perform Welch-method spectral power analysis on event windows
 master_X = []
 print('Performing power spectrum analysis')
 for ev in master_X_raw:
     #find data center, get rid of any outlier channels
+    print('Event-windowed array shape:')
+    print(np.shape(ev))
     ev_av = np.average(ev,axis=0)
     m_av = np.mean(ev_av)
     m_std = np.std(ev_av)
     mark = np.zeros((1,len(ev))).astype('bool')
     for l in range(len(ev)):
-        if mean(ev[l]) > m_av + 3*m_std:
+        if np.average(ev[l]) > m_av + 3*m_std:
             mark[0][l] = True
     cleaned = [ev[i] for i in range(len(ev)) if not mark[0][i]]
     av_cl = np.average(cleaned,axis=0)
-    ww, Pxx = scipy.signal.welch(av_cl, fs=SR)
-    feat = Pxx/mean(Pxx)
-    master_X.append(feat)
+    #ww, Pxx = scipy.signal.welch(av_cl, fs=SR)
+    #feat = Pxx/np.average(Pxx)
+    master_X.append(av_cl)
 
 print('Number of features extracted: %d' % len(master_X))
 print('Number of class vectors extracted: %d' % len(master_Y))
+pkl.dump(master_X, open('features.pkl','wb'))
+pkl.dump(master_Y, open('classes.pkl','wb'))
