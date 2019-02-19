@@ -52,8 +52,11 @@ class EmoNet(nn.Module):
 
 class NetRunner:
 
-    def __init__(self, l_r, epochs):
+    def __init__(self, l_r, epochs, cuda_avail):
+        self.cuda_avail = cuda_avail
         self.net = EmoNet()
+        if self.cuda_avail:
+            self.net.cuda()
         self.l_r = l_r
         self.epochs = epochs
 
@@ -69,15 +72,21 @@ class NetRunner:
             for i in range(len(X)):
                 if i % 100 == 0:
                     print('Training loss: %.4f' % lossval)
-                input = Variable(torch.unsqueeze(torch.unsqueeze(torch.Tensor(X[i]),0),0))
+                ft = X[i]
+                ft = [v/sum(X[i]) for v in ft]
+                input = Variable(torch.unsqueeze(torch.unsqueeze(torch.Tensor(ft),0),0))
+                if self.cuda_avail:
+                    input.cuda()
                 #input = Variable(torch.Tensor(X[i]))
                 target = Variable(torch.unsqueeze(torch.Tensor(Y[i]),1))
                 target = target.type(torch.LongTensor)
+                if self.cuda_avail:
+                    target = target.cuda()
                 #target = Variable(torch.Tensor(Y[i]))
                 #optimizer.zero_grad()
                 out = self.net(input)
                 loss = criterion(out, torch.max(target,0)[1])
-                dd = np.absolute(lossval - loss.data.item()) - np.absolute(delta)
+                #dd = np.absolute(lossval - loss.data.item()) - np.absolute(delta)
                 det_loss = torch.tensor(loss.data, requires_grad=True)
                 delta = lossval - loss.data.item()
                 lossval = loss.data.item()
@@ -90,16 +99,22 @@ class NetRunner:
         criterion = nn.CrossEntropyLoss()
         accs = []
         for i in range(len(X)):
-            input = Variable(torch.unsqueeze(torch.unsqueeze(torch.Tensor(X[i]),0),0))
+            ft = X[i]
+            ft = [v/sum(X[i]) for v in ft]
+            input = Variable(torch.unsqueeze(torch.unsqueeze(torch.Tensor(ft),0),0))
+            if self.cuda_avail:
+                input.cuda()
             #input = Variable(torch.Tensor(X[i]))
             target = Variable(torch.unsqueeze(torch.Tensor(Y[i]),1))
             #target = Variable(torch.Tensor(Y[i]))
             target = target.type(torch.LongTensor)
+            if self.cuda_avail:
+                target.cuda()
             output = self.net(input)
             #print('TRYING TO GET VALUE OUT: %d' % output.item())
             loss = criterion(output, torch.max(target,0)[1])
             c = 0
-            tt = torch.Tensor(Y[i])._requires_grad(False)
+            tt = torch.Tensor(Y[i]).requires_grad_(False)
             if torch.argmax(output).clone().detach().item() == torch.argmax(tt,0).item():
                 c = 1
             accs.append(c)
@@ -128,6 +143,8 @@ if __name__ == "__main__":
         l_r = float(sys.argv[1])
         epochs = int(sys.argv[2])
 
+    cuda_avail = torch.cuda.is_available()
+
     #run both over 10 folds
     test_mark = np.zeros((1,len(util.features)))
     nn_acc = []
@@ -142,6 +159,7 @@ if __name__ == "__main__":
                 while test_mark[0][test[t]] == 1 or test[t] in np.concatenate([test[:t], test[t+1:]]):
                     test[t] = npr.randint(0,len(util.features))
         train = [i for i in range(len(util.features)) if i not in test]
+        train = npr.permutation(train) #shuffle order
         X = [util.features[i].tolist() for i in train]
         Y = [util.classes[i] for i in train]
         print('Sanity check: length of first feature:')
@@ -152,7 +170,7 @@ if __name__ == "__main__":
         Y_test = [util.classes[i] for i in test]
         print('Train-test split created for fold %d' % (k+1))
 
-        netrunner = NetRunner(l_r, epochs)
+        netrunner = NetRunner(l_r, epochs, cuda_avail)
         print('Training...')
         netrunner.train(X, Y)
         print('Testing...')
