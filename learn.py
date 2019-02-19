@@ -139,6 +139,7 @@ if __name__ == "__main__":
     util.load_data()
     l_r = 0.1
     epochs = 100
+    folds = 1
     if len(sys.argv) > 1:
         l_r = float(sys.argv[1])
         epochs = int(sys.argv[2])
@@ -151,7 +152,7 @@ if __name__ == "__main__":
     test_mark = np.zeros((1,len(util.features)))
     nn_acc = []
     print('Running neural net')
-    for k in range(10):
+    for k in range(folds):
         print('Creating splits for fold %d' % (k+1))
         test = npr.choice([i for i in range(len(util.features))],np.floor(len(util.features)/10).astype(int),False)
         for t in range(len(test)):
