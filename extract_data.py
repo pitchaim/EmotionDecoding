@@ -87,8 +87,8 @@ for s in range(len(data_arrs)):
     for time in range(len(m)):
         start = m[time] + IMAGE_START
         for im in range(5):
-            st = start + (im*SR*PRES_TIME)
-            end = SR*PRES_TIME*(im+1)
+            st = start + int(im*SR*PRES_TIME)
+            end = int(SR*PRES_TIME*(im+1))
             data_window = data_arrs[s][:,st:end]
             master_X_raw.append(data_window)
             cl = classes[session][time]
