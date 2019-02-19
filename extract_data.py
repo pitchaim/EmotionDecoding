@@ -63,9 +63,9 @@ cf = open(classfile, 'rb')
 cl = cf.readlines()
 for cc in cl:
     cp = cc.split()
-    classes[0].append(cp[0])
-    classes[1].append(cp[1])
-    classes[2].append(cp[2])
+    classes[0].append(cp[0].decode("utf-8"))
+    classes[1].append(cp[1].decode("utf-8"))
+    classes[2].append(cp[2].decode("utf-8"))
 classdict = {}
 classdict['Pos'] = [1,0,0]
 classdict['Neg'] = [0,1,0]
