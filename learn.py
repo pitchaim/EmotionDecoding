@@ -56,7 +56,7 @@ class NetRunner:
         self.cuda_avail = cuda_avail
         self.net = EmoNet()
         if self.cuda_avail:
-            self.net.cuda()
+            self.net = self.net.cuda()
         self.l_r = l_r
         self.epochs = epochs
 
@@ -76,7 +76,7 @@ class NetRunner:
                 ft = [v/sum(X[i]) for v in ft]
                 input = Variable(torch.unsqueeze(torch.unsqueeze(torch.Tensor(ft),0),0))
                 if self.cuda_avail:
-                    input.cuda()
+                    input = input.cuda()
                 #input = Variable(torch.Tensor(X[i]))
                 target = Variable(torch.unsqueeze(torch.Tensor(Y[i]),1))
                 target = target.type(torch.LongTensor)
@@ -103,13 +103,13 @@ class NetRunner:
             ft = [v/sum(X[i]) for v in ft]
             input = Variable(torch.unsqueeze(torch.unsqueeze(torch.Tensor(ft),0),0))
             if self.cuda_avail:
-                input.cuda()
+                input = input.cuda()
             #input = Variable(torch.Tensor(X[i]))
             target = Variable(torch.unsqueeze(torch.Tensor(Y[i]),1))
             #target = Variable(torch.Tensor(Y[i]))
             target = target.type(torch.LongTensor)
             if self.cuda_avail:
-                target.cuda()
+                target = target.cuda()
             output = self.net(input)
             #print('TRYING TO GET VALUE OUT: %d' % output.item())
             loss = criterion(output, torch.max(target,0)[1])
@@ -144,6 +144,8 @@ if __name__ == "__main__":
         epochs = int(sys.argv[2])
 
     cuda_avail = torch.cuda.is_available()
+    if cuda_avail:
+        print('CUDA IS AVAILABLE!!!')
 
     #run both over 10 folds
     test_mark = np.zeros((1,len(util.features)))
