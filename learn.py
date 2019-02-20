@@ -19,7 +19,9 @@ class EmoNet(nn.Module):
     def __init__(self):
         super(EmoNet, self).__init__()
         self.conv1 = nn.Conv1d(1,3,5)
+        torch.nn.init.xavier_uniform_(self.conv1.weight)
         self.conv2 = nn.Conv1d(3,6,5)
+        torch.nn.init.xavier_uniform_(self.conv2.weight)
         #self.lin1 = nn.Linear(2560,100)
         self.lin1 = nn.Linear(15312,100)
         torch.nn.init.xavier_uniform_(self.lin1.weight)
